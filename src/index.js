@@ -1,33 +1,94 @@
+import { Redis } from "@upstash/redis/cloudflare";
+
 export default {
 	async fetch(request, env) {
 		try {
+			const redis = new Redis({
+				url: env.REDIS_URL, // Your Redis URL from environment variables
+				token: env.REDIS_TOKEN // Your Redis token from environment variables
+			});
 			const requestBody = await request.json();
-			const cardId = requestBody.card_id;
+
 			const today = new Date();
 			const yesterday = new Date(today);
 			yesterday.setDate(yesterday.getDate() - 1);
-
 			const todayDate = today.toISOString().split('T')[0]
 			const yesterdayDate = yesterday.toISOString().split('T')[0]
+
+			const transactionAmount = requestBody.amount.amount / 100
+
+			const cardId = requestBody.card_id;
+			const cardSpendControlCacheKey =
+				'CARD-SPEND-CONTROL:SYNCTERA-ID:' + cardId
+			const virtualCardSpendCacheKey =
+				'CARD-SPEND-AGGREGATE:SYNCTERA-ID:' + cardId
+
+			const cardSpendControlCacheValue = await redis.get(cardSpendControlCacheKey);
+			const virtualCardSpendAggregateCacheValue = await redis.get(virtualCardSpendCacheKey);
+
+			if (cardSpendControlCacheValue == null) {
+				console.log(`Approve: No cardSpendControlCacheKey Found for: Card ID: ${cardId} with key ${cardSpendControlCacheKey}`)
+				return new Response("No Spend Control", { status: 200 })
+			}
+
+			if (virtualCardSpendAggregateCacheValue === null) {
+				console.log(`No virtualCardSpendAggregateCacheValue Found for: Card ID: ${cardId} with key ${cardSpendControlCacheKey}`)
+				return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+			}
+
+			const virtualCardSpendAggregate = JSON.parse(virtualCardSpendAggregateCacheValue)
+			const aggregateWeeklySum = virtualCardSpendAggregate.weeklySum
+			const aggregateMonthlySum = virtualCardSpendAggregate.monthlySum
+
+			const cardSpendControl = JSON.parse(cardSpendControlCacheValue)
+			const spendControlTimeType = cardSpendControl.time_type
+			const spendControlAmount = cardSpendControl.amount
+
 			const [pendingTransactions, postedTransactions] = await Promise.all([
 				getAllPendingCardTransactionsForCardForToday(cardId, yesterdayDate, env),
 				getAllPostedCardTransactionsForCardForToday(cardId, yesterdayDate, env)
 			]);
 
-
 			let totalPendingSpend = calculateTotal(pendingTransactions.results, todayDate);
 			let totalPostedSpend = calculateTotal(postedTransactions.results, todayDate);
 			let totalSpendToday = totalPendingSpend + totalPostedSpend
-
-			console.log("totalPendingTXN: " + pendingTransactions.results)
-			console.log("totalPostedTXN : " + postedTransactions.results)
-			console.log("totalSpendToday : " + totalPendingSpend)
-			console.log("totalPostedSpend : " + totalPostedSpend)
 			const totalSpendTodayInDecimal = totalSpendToday / 100;
-			return new Response(JSON.stringify({ totalSpendTodayInDecimal }), { status: 200 });
+
+			const totalWeeklySpend = totalSpendTodayInDecimal + aggregateWeeklySum
+			const monthlySpend = totalSpendTodayInDecimal + aggregateMonthlySum
+
+			const postTransactionTotalWeekly = totalWeeklySpend + transactionAmount
+			const postTransactionTotalMonthly= monthlySpend + transactionAmount
+			const postTransactionTotalDaily = totalSpendTodayInDecimal + transactionAmount
+			if (spendControlTimeType === 'DAILY') {
+				if ( postTransactionTotalDaily < spendControlAmount) {
+					return new Response("", { status: 200 })
+				} else {
+					console.log(`Total Above for Card: ${cardId} with total ${postTransactionTotalDaily} - type ${spendControlTimeType} and control ${spendControlAmount}`)
+					return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+				}
+
+			} else if (spendControlTimeType === 'WEEKLY') {
+				if (postTransactionTotalWeekly < spendControlAmount) {
+					return new Response("", { status: 200 })
+				} else {
+					console.log(`Total Above for Card: ${cardId} with total ${postTransactionTotalWeekly} - type ${spendControlTimeType} and control ${spendControlAmount}`)
+					return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+				}
+
+			} else if (spendControlTimeType === 'MONTHLY') {
+				if (postTransactionTotalMonthly < spendControlAmount) {
+					return new Response("", { status: 200 })
+				} else {
+					console.log(`Total Above for Card: ${cardId} with total ${postTransactionTotalMonthly} - type ${spendControlTimeType} and control ${spendControlAmount}`)
+					return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+				}
+			}
+
+			console.log("No Base Case Hit Error")
+			return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
 		} catch (error) {
 			console.log(error)
-			console.log(JSON.stringify(error))
 			return new Response(error.message, { status: 500 });
 		}
 	}
