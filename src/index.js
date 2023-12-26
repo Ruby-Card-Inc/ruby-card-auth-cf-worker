@@ -35,15 +35,12 @@ export default {
 				console.log(`No virtualCardSpendAggregateCacheValue Found for: Card ID: ${cardId} with key ${cardSpendControlCacheKey}`)
 				return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
 			}
-
 			const virtualCardSpendAggregate = JSON.parse(virtualCardSpendAggregateCacheValue)
 			const aggregateWeeklySum = virtualCardSpendAggregate.weeklySum
 			const aggregateMonthlySum = virtualCardSpendAggregate.monthlySum
-
-			const cardSpendControl = JSON.parse(cardSpendControlCacheValue)
+			const cardSpendControl = cardSpendControlCacheValue
 			const spendControlTimeType = cardSpendControl.time_type
 			const spendControlAmount = cardSpendControl.amount
-
 			const [pendingTransactions, postedTransactions] = await Promise.all([
 				getAllPendingCardTransactionsForCardForToday(cardId, yesterdayDate, env),
 				getAllPostedCardTransactionsForCardForToday(cardId, yesterdayDate, env)
@@ -64,24 +61,27 @@ export default {
 				if ( postTransactionTotalDaily < spendControlAmount) {
 					return new Response("", { status: 200 })
 				} else {
-					console.log(`Total Above for Card: ${cardId} with total ${postTransactionTotalDaily} - type ${spendControlTimeType} and control ${spendControlAmount}`)
-					return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+					let errorMessage = `Total Above for Card: ${cardId} with total ${postTransactionTotalDaily} - type ${spendControlTimeType} and control ${spendControlAmount}`
+					console.log(errorMessage)
+					return new Response(errorMessage, { status: 500 })
 				}
 
 			} else if (spendControlTimeType === 'WEEKLY') {
 				if (postTransactionTotalWeekly < spendControlAmount) {
 					return new Response("", { status: 200 })
 				} else {
-					console.log(`Total Above for Card: ${cardId} with total ${postTransactionTotalWeekly} - type ${spendControlTimeType} and control ${spendControlAmount}`)
-					return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+					let errorMessage =`Total Above for Card: ${cardId} with total ${postTransactionTotalWeekly} - type ${spendControlTimeType} and control ${spendControlAmount}`
+					console.log(errorMessage)
+					return new Response(errorMessage, { status: 500 })
 				}
 
 			} else if (spendControlTimeType === 'MONTHLY') {
 				if (postTransactionTotalMonthly < spendControlAmount) {
 					return new Response("", { status: 200 })
 				} else {
-					console.log(`Total Above for Card: ${cardId} with total ${postTransactionTotalMonthly} - type ${spendControlTimeType} and control ${spendControlAmount}`)
-					return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+					let errorMessage =`Total Above for Card: ${cardId} with total ${postTransactionTotalMonthly} - type ${spendControlTimeType} and control ${spendControlAmount}`
+					console.log(errorMessage)
+					return new Response(errorMessage, { status: 500 })
 				}
 			}
 
