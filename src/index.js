@@ -15,6 +15,7 @@ export default {
 			const todayDate = today.toISOString().split('T')[0]
 			const yesterdayDate = yesterday.toISOString().split('T')[0]
 
+			console.log('Printing Raw Body: ', requestBody)
 			const transactionAmount = requestBody.amount.amount / 100
 
 			const cardId = requestBody.card_id;
@@ -41,11 +42,14 @@ export default {
 			const cardSpendControl = cardSpendControlCacheValue
 			const spendControlTimeType = cardSpendControl.time_type
 			const spendControlAmount = cardSpendControl.amount
-			const [pendingTransactions, postedTransactions] = await Promise.all([
+			let [pendingTransactions, postedTransactions] = await Promise.all([
 				getAllPendingCardTransactionsForCardForToday(cardId, yesterdayDate, env),
 				getAllPostedCardTransactionsForCardForToday(cardId, yesterdayDate, env)
 			]);
-
+			pendingTransactions.results = pendingTransactions.results.filter(txn => txn.data.amount !== requestBody.amount.amount && txn.data.transaction_time !== requestBody.user_transaction_time)
+			console.log(yesterdayDate)
+			console.log('PENDING: ', pendingTransactions.results)
+			console.log('POSTED: ', postedTransactions.results)
 			let totalPendingSpend = calculateTotal(pendingTransactions.results, todayDate);
 			let totalPostedSpend = calculateTotal(postedTransactions.results, todayDate);
 			let totalSpendToday = totalPendingSpend + totalPostedSpend
@@ -109,13 +113,19 @@ async function makeSyncteraRequest(options, errorMessage = '', followNextLinks =
 	try {
 		let url = new URL(options.url, env.SYNCTERA_BASE_URL);
 		url.search = new URLSearchParams(options.params).toString();
+		url.searchParams.append('cachebust', Date.now());
 
 		let response = await fetch(url, {
 			method: options.method,
 			headers: {
 				Authorization: `Bearer ${env.SYNCTERA_API_KEY}`,
-				'User-Agent': 'CF-Worker-API-Client/1.0'
+				'User-Agent': 'CF-Worker-API-Client/1.0',
+				'Cache-Control': 'no-cache, no-store, must-revalidate',
+			},
+			cf: {
+				cacheTtl: -1 // Bypass Cloudflare's cache
 			}
+
 		});
 
 		let data = await response.json();
