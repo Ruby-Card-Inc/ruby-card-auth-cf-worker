@@ -34,7 +34,7 @@ export default {
 
 			if (virtualCardSpendAggregateCacheValue === null) {
 				console.log(`No virtualCardSpendAggregateCacheValue Found for: Card ID: ${cardId} with key ${cardSpendControlCacheKey}`)
-				return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+				return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 402 })
 			}
 			const virtualCardSpendAggregate = JSON.parse(virtualCardSpendAggregateCacheValue)
 			const aggregateWeeklySum = virtualCardSpendAggregate.weeklySum
@@ -67,7 +67,7 @@ export default {
 				} else {
 					let errorMessage = `Total Above for Card: ${cardId} with total ${postTransactionTotalDaily} - type ${spendControlTimeType} and control ${spendControlAmount}`
 					console.log(errorMessage)
-					return new Response(errorMessage, { status: 500 })
+					return new Response(errorMessage, { status: 402 })
 				}
 
 			} else if (spendControlTimeType === 'WEEKLY') {
@@ -76,7 +76,7 @@ export default {
 				} else {
 					let errorMessage =`Total Above for Card: ${cardId} with total ${postTransactionTotalWeekly} - type ${spendControlTimeType} and control ${spendControlAmount}`
 					console.log(errorMessage)
-					return new Response(errorMessage, { status: 500 })
+					return new Response(errorMessage, { status: 402 })
 				}
 
 			} else if (spendControlTimeType === 'MONTHLY') {
@@ -85,15 +85,15 @@ export default {
 				} else {
 					let errorMessage =`Total Above for Card: ${cardId} with total ${postTransactionTotalMonthly} - type ${spendControlTimeType} and control ${spendControlAmount}`
 					console.log(errorMessage)
-					return new Response(errorMessage, { status: 500 })
+					return new Response(errorMessage, { status: 402 })
 				}
 			}
 
 			console.log("No Base Case Hit Error")
-			return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 500 })
+			return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 402 })
 		} catch (error) {
 			console.log(error)
-			return new Response(error.message, { status: 500 });
+			return new Response(error.message, { status: 402 });
 		}
 	}
 };
