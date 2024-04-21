@@ -50,3 +50,4 @@ compatibility_date = "2023-12-06"
 # tag = "v1"
 # new_classes = ["MyDurableObject"]
 logpush = true
+mode = "smart"
