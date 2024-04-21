@@ -24,8 +24,10 @@ export default {
 			const virtualCardSpendCacheKey =
 				'CARD-SPEND-AGGREGATE:SYNCTERA-ID:' + cardId
 
-			const cardSpendControlCacheValue = await redis.get(cardSpendControlCacheKey);
-			const virtualCardSpendAggregateCacheValue = await redis.get(virtualCardSpendCacheKey);
+			const [cardSpendControlCacheValue, virtualCardSpendAggregateCacheValue] = await redis.mget(
+				cardSpendControlCacheKey,
+				virtualCardSpendCacheKey
+			);
 
 			if (cardSpendControlCacheValue == null) {
 				console.log(`Approve: No cardSpendControlCacheKey Found for: Card ID: ${cardId} with key ${cardSpendControlCacheKey}`)
@@ -150,7 +152,7 @@ async function makeSyncteraRequest(options, errorMessage = '', followNextLinks =
 async function getAllPendingCardTransactionsForCardForToday(cardId, todayDate, env) {
 	return makeSyncteraRequest({
 		url: `/v0/transactions/pending`,
-		params: { card_id: cardId, type: 'card', from_date: todayDate, limit: 100 },
+		params: { card_id: cardId, type: 'card', from_date: todayDate, limit: 100, exclude_jit_transactions: true  },
 		method: 'GET'
 	}, null, true, env);
 }
@@ -158,7 +160,7 @@ async function getAllPendingCardTransactionsForCardForToday(cardId, todayDate, e
 async function getAllPostedCardTransactionsForCardForToday(cardId, todayDate, env) {
 	return makeSyncteraRequest({
 		url: `/v0/transactions/posted`,
-		params: { card_id: cardId, type: 'card', from_date: todayDate, limit: 100 },
+		params: { card_id: cardId, type: 'card', from_date: todayDate, limit: 100, exclude_jit_transactions: true },
 		method: 'GET'
 	}, null, true, env);
 }
