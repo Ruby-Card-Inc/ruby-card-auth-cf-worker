@@ -41,7 +41,7 @@ export default {
 			const virtualCardSpendAggregate = JSON.parse(virtualCardSpendAggregateCacheValue)
 			const aggregateWeeklySum = virtualCardSpendAggregate.weeklySum
 			const aggregateMonthlySum = virtualCardSpendAggregate.monthlySum
-			const cardSpendControl = cardSpendControlCacheValue
+			const cardSpendControl = JSON.parse(cardSpendControlCacheValue)
 			const spendControlTimeType = cardSpendControl.time_type
 			const spendControlAmount = cardSpendControl.amount
 			let [pendingTransactions, postedTransactions] = await Promise.all([
@@ -63,6 +63,9 @@ export default {
 			const postTransactionTotalWeekly = totalWeeklySpend + transactionAmount
 			const postTransactionTotalMonthly= monthlySpend + transactionAmount
 			const postTransactionTotalDaily = totalSpendTodayInDecimal + transactionAmount
+
+			console.log('yo', cardSpendControl, spendControlTimeType, spendControlAmount)
+
 			if (spendControlTimeType === 'DAILY') {
 				if ( postTransactionTotalDaily < spendControlAmount) {
 					return new Response("", { status: 200 })
@@ -92,7 +95,7 @@ export default {
 			}
 
 			console.log("No Base Case Hit Error")
-			return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 402 })
+			return new Response("base case erroring out", { status: 402 })
 		} catch (error) {
 			console.log(error)
 			return new Response(error.message, { status: 402 });
