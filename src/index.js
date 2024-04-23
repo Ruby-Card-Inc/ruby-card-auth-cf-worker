@@ -39,12 +39,12 @@ export default {
 				return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 402 })
 			}
 
-			const virtualCardSpendAggregate = JSON.parse(virtualCardSpendAggregateCacheValue)
+			const virtualCardSpendAggregate = virtualCardSpendAggregateCacheValue
 			const aggregateWeeklySum = virtualCardSpendAggregate.weeklySum
 			const aggregateMonthlySum = virtualCardSpendAggregate.monthlySum
 			console.log({virtualCardSpendAggregate,aggregateMonthlySum,aggregateWeeklySum});
 
-			const cardSpendControl = JSON.parse(cardSpendControlCacheValue)
+			const cardSpendControl = cardSpendControlCacheValue
 			const spendControlTimeType = cardSpendControl.time_type
 			const spendControlAmount = cardSpendControl.amount
 			console.log({cardSpendControl,spendControlTimeType,spendControlAmount});
