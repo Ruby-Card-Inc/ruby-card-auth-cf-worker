@@ -38,22 +38,32 @@ export default {
 				console.log(`No virtualCardSpendAggregateCacheValue Found for: Card ID: ${cardId} with key ${cardSpendControlCacheKey}`)
 				return new Response("No virtualCardSpendAggregateCacheValue Found", { status: 402 })
 			}
+
 			const virtualCardSpendAggregate = JSON.parse(virtualCardSpendAggregateCacheValue)
 			const aggregateWeeklySum = virtualCardSpendAggregate.weeklySum
 			const aggregateMonthlySum = virtualCardSpendAggregate.monthlySum
+			console.log({virtualCardSpendAggregate,aggregateMonthlySum,aggregateWeeklySum});
+
 			const cardSpendControl = JSON.parse(cardSpendControlCacheValue)
 			const spendControlTimeType = cardSpendControl.time_type
 			const spendControlAmount = cardSpendControl.amount
+			console.log({cardSpendControl,spendControlTimeType,spendControlAmount});
+
 			let [pendingTransactions, postedTransactions] = await Promise.all([
 				getAllPendingCardTransactionsForCardForToday(cardId, yesterdayDate, env),
 				getAllPostedCardTransactionsForCardForToday(cardId, yesterdayDate, env)
 			]);
+
 			pendingTransactions.results = pendingTransactions.results.filter(txn => txn.data.amount !== requestBody.amount.amount && txn.data.transaction_time !== requestBody.user_transaction_time)
+
 			console.log(yesterdayDate)
 			console.log('PENDING: ', pendingTransactions.results)
 			console.log('POSTED: ', postedTransactions.results)
+
 			let totalPendingSpend = calculateTotal(pendingTransactions.results, todayDate);
 			let totalPostedSpend = calculateTotal(postedTransactions.results, todayDate);
+			console.log(`Total Pending Spend: ${totalPendingSpend} - Total Posted Spend: ${totalPostedSpend}`)
+
 			let totalSpendToday = totalPendingSpend + totalPostedSpend
 			const totalSpendTodayInDecimal = totalSpendToday / 100;
 
@@ -63,11 +73,11 @@ export default {
 			const postTransactionTotalWeekly = totalWeeklySpend + transactionAmount
 			const postTransactionTotalMonthly= monthlySpend + transactionAmount
 			const postTransactionTotalDaily = totalSpendTodayInDecimal + transactionAmount
-
-			console.log('yo', cardSpendControl, spendControlTimeType, spendControlAmount)
+			console.log(`totalSpendToday: ${totalSpendToday}, totalSpendTodayInDecimal: ${totalSpendTodayInDecimal}, totalWeeklySpend: ${totalWeeklySpend}, monthlySpend: ${monthlySpend}, postTransactionTotalDaily: ${postTransactionTotalDaily}, postTransactionTotalWeekly: ${postTransactionTotalWeekly}, postTransactionTotalMonthly: ${postTransactionTotalMonthly}`)
 
 			if (spendControlTimeType === 'DAILY') {
 				if ( postTransactionTotalDaily < spendControlAmount) {
+					console.log(`Passing ${postTransactionTotalDaily} less than ${spendControlAmount}`)
 					return new Response("", { status: 200 })
 				} else {
 					let errorMessage = `Total Above for Card: ${cardId} with total ${postTransactionTotalDaily} - type ${spendControlTimeType} and control ${spendControlAmount}`
@@ -77,6 +87,7 @@ export default {
 
 			} else if (spendControlTimeType === 'WEEKLY') {
 				if (postTransactionTotalWeekly < spendControlAmount) {
+					console.log(`Passing ${postTransactionTotalWeekly} less than ${spendControlAmount}`)
 					return new Response("", { status: 200 })
 				} else {
 					let errorMessage =`Total Above for Card: ${cardId} with total ${postTransactionTotalWeekly} - type ${spendControlTimeType} and control ${spendControlAmount}`
@@ -86,6 +97,7 @@ export default {
 
 			} else if (spendControlTimeType === 'MONTHLY') {
 				if (postTransactionTotalMonthly < spendControlAmount) {
+					console.log(`Passing ${postTransactionTotalMonthly} less than ${spendControlAmount}`)
 					return new Response("", { status: 200 })
 				} else {
 					let errorMessage =`Total Above for Card: ${cardId} with total ${postTransactionTotalMonthly} - type ${spendControlTimeType} and control ${spendControlAmount}`
