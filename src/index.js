@@ -54,7 +54,9 @@ export default {
 				getAllPostedCardTransactionsForCardForToday(cardId, yesterdayDate, env)
 			]);
 
-			pendingTransactions.results = pendingTransactions.results.filter(txn => txn.data.amount !== requestBody.amount.amount && txn.data.transaction_time !== requestBody.user_transaction_time)
+			pendingTransactions.results = pendingTransactions.results.filter(txn =>
+				!(txn.data.amount === requestBody.amount.amount && txn.data.transaction_time === requestBody.user_transaction_time)
+			);
 
 			console.log(yesterdayDate)
 			console.log('PENDING: ', pendingTransactions.results)
